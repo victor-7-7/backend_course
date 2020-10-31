@@ -120,8 +120,6 @@ class Json2csv {
  //=======================================================================
 
 new Json2csv(['postId', 'name', 'body']).transform(
-    path.join(__dirname, '/data/comments2.json'),
+    path.join(__dirname, '/data/comments.json'),
     path.join(__dirname, '/data/comments.csv')
 );
-
-// ['postId', 'name', 'body']

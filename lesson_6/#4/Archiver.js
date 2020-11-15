@@ -1,53 +1,36 @@
 
-const fs = require('fs');
-const zlib = require('zlib');
-const { pipeline } = require('stream');
+const { createReadStream, createWriteStream } = require('fs');
+const { createGzip, createGunzip, createDeflate, createInflate } = require('zlib');
 
-module.exports = class Archiver {
+const { promisify } = require('util');
+const { pipeline } = require('stream');
+const promisePipeline = promisify(pipeline);
+
+class Archiver {
     #algorithm;
 
     constructor(options = { algorithm: 'gzip' }) {
-        Archiver.#checkConditions(options);
+        this.#checkConditions(options);
         this.#algorithm = options.algorithm;
     }
 
-    zipFile(sourcePath, destinationPath = sourcePath + '.gz') {
-        return new Promise((resolve, reject) => {
-            const reader = fs.createReadStream(sourcePath);
-            // архиватор
-            const zipper = (this.#algorithm === 'gzip') ? zlib.createGzip()
-                : zlib.createDeflate();
-
-            const writer = fs.createWriteStream(destinationPath);
-            pipeline(reader, zipper, writer,
-                 (err) => {
-                     if (err) {
-                         reject('Zip pipeline failed. ' + err);
-                     } else {
-                         resolve('Zip pipeline succeeded');
-                     }
-                 });
-        });
+    async zipFile(input, output = input + '.gz') {
+        const zipper = (this.#algorithm === 'gzip') ? createGzip() : createDeflate();
+        const source = createReadStream(input);
+        const destination = createWriteStream(output);
+        await promisePipeline(source, zipper, destination);
+        return 'Zip file succeeded';
     }
 
-    unzipFile(sourcePath, destinationPath = sourcePath + '.unz') {
-        const reader = fs.createReadStream(sourcePath);
-        // деархиватор
-        const unzip = (this.#algorithm === 'gzip') ? zlib.createGunzip()
-            : zlib.createInflate();
-
-        const writer = fs.createWriteStream(destinationPath);
-        pipeline(reader, unzip, writer,
-             (err) => {
-                 if (err) {
-                     console.error('Unzip pipeline failed. ', err);
-                 } else {
-                     console.log('Unzip pipeline succeeded');
-                 }
-             });
+    async unzipFile(input, output = input + '.unz') {
+        const unzip = (this.#algorithm === 'gzip') ? createGunzip() : createInflate();
+        const source = createReadStream(input);
+        const destination = createWriteStream(output);
+        await promisePipeline(source, unzip, destination);
+        return 'Unzip file succeeded';
     }
 
-    static #checkConditions = (options) => {
+    #checkConditions = (options) => {
         if(!(options.hasOwnProperty('algorithm') && typeof options.algorithm === 'string'))
             throw new TypeError(
                 'Объект опций должен содержать свойство algorithm. Это ' +
@@ -63,3 +46,4 @@ module.exports = class Archiver {
     }
 }
 
+module.exports = { Archiver };

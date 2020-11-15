@@ -1,39 +1,28 @@
 
-const fs = require('fs');
-const zlib = require('zlib');
+const { createReadStream, createWriteStream } = require('fs');
+const { createGzip, createGunzip } = require('zlib');
+
+const { promisify } = require('util');
 const { pipeline } = require('stream');
+const promisePipeline = promisify(pipeline);
 
-module.exports = class Archiver {
+class Archiver {
 
-    zipFile(sourcePath, destinationPath = sourcePath + '.gz') {
-        return new Promise((resolve, reject) => {
-            const reader = fs.createReadStream(sourcePath);
-            const gzip = zlib.createGzip(); // архиватор
-            const writer = fs.createWriteStream(destinationPath);
-            pipeline(reader, gzip, writer,
-                     (err) => {
-                         if (err) {
-                             reject('Zip pipeline failed. ' + err);
-                         } else {
-                             resolve('Zip pipeline succeeded');
-                         }
-                     });
-        });
+    async zipFile(input, output = input + '.gz') {
+        const gzip = createGzip();
+        const source = createReadStream(input);
+        const destination = createWriteStream(output);
+        await promisePipeline(source, gzip, destination);
+        return 'Zip file succeeded';
     }
 
-    unzipFile(sourcePath, destinationPath = sourcePath + '.unz') {
-        const reader = fs.createReadStream(sourcePath);
-        const gunzip = zlib.createGunzip(); // деархиватор
-        const writer = fs.createWriteStream(destinationPath);
-        pipeline(reader, gunzip, writer,
-                 (err) => {
-                     if (err) {
-                         console.error('Unzip pipeline failed. ', err);
-                     } else {
-                         console.log('Unzip pipeline succeeded');
-                     }
-                 });
-
+    async unzipFile(input, output = input + '.unz') {
+        const gunzip = createGunzip();
+        const source = createReadStream(input);
+        const destination = createWriteStream(output);
+        await promisePipeline(source, gunzip, destination);
+        return 'Unzip file succeeded';
     }
 }
 
+module.exports = { Archiver };

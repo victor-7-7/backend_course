@@ -18,7 +18,7 @@ const privateKey = '-----BEGIN RSA PRIVATE KEY-----\n' +
     'oZ6ZiCpsipjf5SXqSJ+8Hd7ijTUP7/WGdaAsrcghfw==\n' +
     '-----END RSA PRIVATE KEY-----';
 
-module.exports = class Guardian extends Transform {
+class Guardian extends Transform {
     #rsName;
     #algorithm;
     #key;
@@ -65,3 +65,4 @@ module.exports = class Guardian extends Transform {
     };
 }
 
+module.exports = { Guardian };

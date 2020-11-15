@@ -2,7 +2,7 @@
 const { Transform } = require('stream');
 const crypto = require('crypto');
 
-module.exports = class Guardian extends Transform {
+class Guardian extends Transform {
     #rsName;
     #algorithm;
     #key;
@@ -42,3 +42,4 @@ module.exports = class Guardian extends Transform {
     };
 }
 
+module.exports = { Guardian };

@@ -8,117 +8,137 @@ class Json2csv {
     constructor(propertyFilter) {
         if (propertyFilter && Array.isArray(propertyFilter)
             && propertyFilter.length > 0) {
-            this.#filter = propertyFilter;
+            this.#filter = this.#cleanArray(propertyFilter);
         }
     }
 
     transform = (jsonSourcePath, csvDestinationPath) => {
         fs.readFile(jsonSourcePath, (error, file) => {
-            if (error) throw error;
+            if (error) {
+                throw error;
+            }
 
-            let arrayOfObjects;
-
-            try {
-                arrayOfObjects = JSON.parse(file.toString());
-            } catch (e) {
-                console.log(`Содержимое файла ${jsonSourcePath} не является Json-объектом`);
+            const arrayOfObjects = this.#getObjects(file, jsonSourcePath);
+            if (! arrayOfObjects) {
                 return;
             }
 
-            if (!Array.isArray(arrayOfObjects)) {
-                // Нет смысла перегонять json в cvs ради единственной записи
-                console.log('Json-объект должен быть массивом');
-                return;
-            }
-            // Если свойства объекта должны фильтроваться, то число столбцов
+            // Если свойства объекта надо фильтровать, то число столбцов
             // в создаваемой таблице приравняем длине фильтр-массива
-            const cvsColumnsCount = this.#filter ? this.#filter.length
+            const csvColumnsCount = this.#filter ? this.#filter.length
                 : Object.keys(arrayOfObjects[0]).length;
 
-            if (cvsColumnsCount === 0) {
+            if (csvColumnsCount === 0) {
                 console.log('Элемент массива должен быть объектом со свойствами');
                 return;
             }
 
-            // Формируем шапку cvs-таблицы
-            let content = this.#convertObjectToStringLine(
-                arrayOfObjects[0], cvsColumnsCount, true);
+            // Формируем шапку csv-таблицы
+            const header = this.#createCsvHeader(arrayOfObjects[0]);
 
-            if (!content) {
-                console.log('Шапка cvs-таблицы не должна быть пустой');
+            if (!header) {
+                console.log('Шапка csv-таблицы не должна быть пустой');
                 return;
             }
 
-            // Заполняем cvs-таблицу строками
-            let cvsRowsCount = 0;
+            let body = '';
+            // Формируем тело csv-таблицы
+            let csvRowsCount = 0;
             for (const object of arrayOfObjects) {
-                const line = this.#convertObjectToStringLine(object, cvsColumnsCount);
+                const line = this.#convertObjectToStringLine(object, csvColumnsCount);
                 if (line !== '') {
-                    content += line;
-                    cvsRowsCount++;
+                    body += line;
+                    csvRowsCount++;
                 }
             }
 
-            if (cvsRowsCount === 0) {
-                console.log('Результат преобразования json -> cvs не имеет содержательной части');
+            if (csvRowsCount === 0) {
+                console.log('Результат преобразования json -> csv не имеет содержательной части');
                 return;
             }
-            // Пишем сформированную cvs-таблицу в файл
-            fs.writeFile(csvDestinationPath, content, error => {
-                if (error) throw error;
+            // Пишем сформированную csv-таблицу в файл
+            fs.writeFile(csvDestinationPath, header + body, error => {
+                if (error) {
+                    throw error;
+                }
             });
         });
     }
 
-    #convertObjectToStringLine = (object, cvsColumnsCount, header = false) => {
+    #cleanArray = (array) => {
+        const cleanedArr = array.filter(value => typeof value === 'string' && value.trim() !== '');
+        return cleanedArr.length > 0 ? cleanedArr : null;
+    }
+
+    #getObjects = (file, path) => {
+        let objs;
+        try {
+            objs = JSON.parse(file.toString());
+        } catch (e) {
+            console.log(`Содержимое файла ${path} не является Json-объектом`);
+            return null;
+        }
+
+        if (!Array.isArray(objs)) {
+            // Нет смысла перегонять json в csv ради единственной csv-записи
+            console.log('Json-объект должен быть массивом');
+            return null;
+        }
+        return objs;
+    }
+
+    #createCsvHeader = (object) => {
         let line = '';
-        let notEmpty = false;
         // Если в конструктор был передан фильтр-массив на имена свойств
         if (this.#filter) {
-            if (header) {
-                // Формируем шапку таблицы из значений фильтр-массива
-                let i = 0;
-                for (const value of this.#filter) {
-                    i++;
-                    line += (i === cvsColumnsCount) ? `"${value}"\n` : `"${value}"${this.#delimiter}`;
-                    if (value !== '') notEmpty = true;
-                }
+            for (const value of this.#filter) {
+                line += `"${value}"${this.#delimiter}`;
             }
-            else {
-                // Формируем тело таблицы из значений фильтрованных свойств объекта
-                for (let i = 0; i < cvsColumnsCount; i++) {
-                    const key = this.#filter[i];
-                    const cell = Object.keys(object).includes(key) ? object[key] : '';
-                    line += (i + 1 === cvsColumnsCount) ? `"${cell}"\n`
-                        : `"${cell}"${this.#delimiter}`;
-                    if (cell !== '') notEmpty = true;
-                }
+        }
+        // Без фильтра на имена свойств
+        else {
+            for (const key in object) {
+                line += `"${key}"${this.#delimiter}`;
+            }
+        }
+        // Последний символ-разделитель меняем на символ новой строки
+        return line.slice(0, -1) + '\n';
+    }
+
+    #convertObjectToStringLine = (object, csvColumnsCount) => {
+        let line = '';
+        let emptyLine = true;
+        // Если в конструктор был передан фильтр-массив на имена свойств
+        if (this.#filter) {
+            // Формируем строку из значений фильтрованных свойств объекта
+            for (let i = 0; i < csvColumnsCount; i++) {
+                const key = this.#filter[i];
+                const value = Object.keys(object).includes(key) ? object[key] : '';
+                line += `"${value}"${this.#delimiter}`;
+                if (value !== '') emptyLine = false;
             }
         }
         // Без фильтра на имена свойств
         else {
             // Число полей в формируемой строке должно совпасть с числом столбцов в таблице.
             // Иначе невалидный объект отбрасывается
-            if (Object.keys(object).length !== cvsColumnsCount) {
+            if (Object.keys(object).length !== csvColumnsCount) {
                 return '';
             }
-            let i = 0;
             // Все свойства объекта являются OwnProperty в силу специфики создания объекта
             for (const key in object) {
-                i++;
-                const cell = header ? key : object[key];
-                // Неэкранированной двойной кавычки внутри cell быть не может
+                // Неэкранированной двойной кавычки внутри object[key] быть не может
                 // (это сломало бы JSON.parse())
-                line += (i === cvsColumnsCount) ? `"${cell}"\n` : `"${cell}"${this.#delimiter}`;
-                if (cell !== '') notEmpty = true;
+                line += `"${object[key]}"${this.#delimiter}`;
+                if (object[key] !== '') emptyLine = false;
             }
         }
-        if (notEmpty) return line;
-        else return '';
+        // Последний символ-разделитель меняем на символ новой строки
+        return emptyLine ? '' : line.slice(0, -1) + '\n';
     }
 }
- //=======================================================================
 
+ //=======================================================================
 new Json2csv(['postId', 'name', 'body']).transform(
     path.join(__dirname, '/data/comments.json'),
     path.join(__dirname, '/data/comments.csv')

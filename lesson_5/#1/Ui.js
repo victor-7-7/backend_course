@@ -1,16 +1,17 @@
 
 const { Readable } = require('stream');
 
-module.exports = class Ui extends Readable {
+class Ui extends Readable {
+    #data;
 
     constructor(customers, options = {objectMode: true}) {
         super(options);
         Ui.#checkConditions(customers);
-        this.data = customers;
+        this.#data = customers;
     }
 
     _read() {
-        const data = this.data.shift();
+        const data = this.#data.shift();
         if (!data) {
             this.push(null);
         } else {
@@ -42,3 +43,4 @@ module.exports = class Ui extends Readable {
     }
 }
 
+module.exports = { Ui };

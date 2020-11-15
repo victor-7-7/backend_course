@@ -2,7 +2,7 @@
 const { Writable } = require('stream');
 const crypto = require('crypto');
 
-module.exports = class AccountManager extends Writable {
+class AccountManager extends Writable {
     customers = [];
     #algorithm;
     #key;
@@ -31,3 +31,5 @@ module.exports = class AccountManager extends Writable {
         return decrypted;
     };
 }
+
+module.exports = { AccountManager };

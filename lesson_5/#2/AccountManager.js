@@ -2,7 +2,7 @@
 const { Writable } = require('stream');
 const crypto = require('crypto');
 
-publicKey = '-----BEGIN CERTIFICATE-----\n' +
+const publicKey = '-----BEGIN CERTIFICATE-----\n' +
     'MIIB0TCCAToCCQCPzQvQNLrdWjANBgkqhkiG9w0BAQsFADAtMQswCQYDVQQGEwJy\n' +
     'dTENMAsGA1UEBwwEY2l0eTEPMA0GA1UEAwwGVmljdG9yMB4XDTIwMTAyNTA2MTMz\n' +
     'OFoXDTIwMTEyNDA2MTMzOFowLTELMAkGA1UEBhMCcnUxDTALBgNVBAcMBGNpdHkx\n' +
@@ -15,7 +15,7 @@ publicKey = '-----BEGIN CERTIFICATE-----\n' +
     'zzgJFN+ZWH/E/eUJGcoi/yBFGEO0k0bQxXEW9unYPg5zcdS8XQ==\n' +
     '-----END CERTIFICATE-----';
 
-module.exports = class AccountManager extends Writable {
+class AccountManager extends Writable {
     customers = [];
     #algorithm;
     #key;
@@ -58,3 +58,5 @@ module.exports = class AccountManager extends Writable {
         return decrypted;
     };
 }
+
+module.exports = { AccountManager };

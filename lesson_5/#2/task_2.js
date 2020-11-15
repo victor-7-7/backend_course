@@ -1,8 +1,11 @@
 
-const Ui = require('./Ui');
-const Guardian = require('./Guardian');
-const AccountManager = require('./AccountManager');
+const { Ui } = require('./Ui');
+const { Guardian } = require('./Guardian');
+const { AccountManager } = require('./AccountManager');
+
+const { promisify } = require('util');
 const { pipeline } = require('stream');
+const promisePipeline = promisify(pipeline);
 
 const crypto = require('crypto');
 
@@ -27,13 +30,10 @@ const key = crypto.scryptSync(password, salt, 24);
 const guardian = new Guardian(key);
 const manager = new AccountManager(key);
 
-pipeline(ui, guardian, manager,
-         (err) => {
-             if (err) {
-                 console.error('Pipeline failed. ', err);
-             } else {
-                 console.log('Pipeline succeeded. ');
-             }
-         });
+async function run() {
+    await promisePipeline(ui, guardian, manager);
+    console.log('Pipeline succeeded');
+}
 
+run().catch( err => console.error('Pipeline failed. ', err));
 

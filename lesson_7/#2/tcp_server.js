@@ -14,7 +14,7 @@ server.on('connection', socket => {
     console.log('New client connected!');
 
     socket.on('data', jsonRequest => {
-        let pattern = {};
+        const pattern = {};
         let content = '';
 
         const objRequest = jsonRequest.toString() !== '{}' ? JSON.parse(jsonRequest) : null;

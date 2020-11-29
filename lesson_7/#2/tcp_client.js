@@ -7,7 +7,7 @@ const client = new Socket();
 const objRequest = {
     filter: {
         name: {first: '', last: ''},
-        phone: '',
+        phone: '00',
         address: {zip: '', city:'', country: '', street: ''},
         email: ''
     },
@@ -35,7 +35,7 @@ function clientConnect() {
 
 client.on('data', bufferChunk => {
     console.log('========== Received chunk on client side =>\n', bufferChunk);
-    let raw = bufferChunk.toString();
+    const raw = bufferChunk.toString();
     content += raw;
 });
 
